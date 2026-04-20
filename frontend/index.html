@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hadoop Student Analytics | Big Data Dash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --secondary: #64748b;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Styling */
+        aside {
+            width: 260px;
+            background: #1e293b;
+            color: #f8fafc;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+            padding: 0 0.5rem;
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: #94a3b8;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .status-badge {
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            background: var(--accent);
+        }
+
+        .status-dot.active { background: var(--success); }
+        .status-dot.error { background: var(--danger); }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+            max-width: 1400px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header-title h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-info h3 {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-info .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .col-8 { grid-column: span 8; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-12 { grid-column: span 12; }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        tr:hover td { background: var(--primary-light); }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #e0f2fe; color: #075985; }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: white;
+            font-size: 0.875rem;
+            outline: none;
+        }
+
+        /* Tabs and Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading UI */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Utils */
+        .mt-4 { margin-top: 1rem; }
+        .text-center { text-align: center; }
+
+        @media (max-width: 1024px) {
+            aside { width: 80px; padding: 1.5rem 0.75rem; }
+            aside h2, aside span:not(.lucide), .nav-item span:not(.lucide) { display: none; }
+            main { margin-left: 80px; }
+            .col-8, .col-4 { grid-column: span 12; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="font-weight: 600; color: var(--text-muted)">Connecting to Hadoop Cluster...</p>
+    </div>
+
+    <aside>
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="database" size="20" color="white"></i></div>
+            <h2>HadoopDash</h2>
+        </div>
+        
+        <nav>
+            <div class="nav-item active" onclick="switchTab('overview', this)">
+                <i data-lucide="layout-dashboard" size="18"></i>
+                <span>Overview</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('students', this)">
+                <i data-lucide="users" size="18"></i>
+                <span>Student Records</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('analysis', this)">
+                <i data-lucide="bar-chart-3" size="18"></i>
+                <span>Subject Analysis</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('pipeline', this)">
+                <i data-lucide="git-branch" size="18"></i>
+                <span>MapReduce Flow</span>
+            </div>
+        </nav>
+
+        <div class="status-badge">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="status-text" style="font-weight: 600;">Initializing...</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8;" id="status-detail">
+                Waiting for MapReduce jobs...
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-title">
+                <h1 id="view-title">Performance Overview</h1>
+                <p>Student Mark Analytics System — Powered by Apache Hadoop</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button onclick="refreshData()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500;">
+                    <i data-lucide="refresh-cw" size="16"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- OVERVIEW TAB -->
+        <div id="tab-overview" class="tab-content active">
+            <div class="stats-grid" id="stats-row">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card col-8">
+                    <div class="card-header"><h3 class="card-title">Grade Distribution</h3></div>
+                    <div style="height: 350px;"><canvas id="gradeChart"></canvas></div>
+                </div>
+                <div class="card col-4">
+                    <div class="card-header"><h3 class="card-title">Top Performers</h3></div>
+                    <div id="rankList"></div>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><h3 class="card-title">Score Histogram</h3></div>
+                    <div style="height: 250px;"><canvas id="histChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENTS TAB -->
+        <div id="tab-students" class="tab-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Department</label>
+                    <select id="deptFilter" onchange="renderTable()">
+                        <option value="">All Departments</option>
+                        <option value="CSE">CSE</option>
+                        <option value="ECE">ECE</option>
+                        <option value="MECH">MECH</option>
+                        <option value="CIVIL">CIVIL</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Grade</label>
+                    <select id="gradeFilter" onchange="renderTable()">
+                        <option value="">All Grades</option>
+                        <option value="O">Outstanding (O)</option>
+                        <option value="A+">A+</option>
+                        <option value="A">A</option>
+                        <option value="B+">B+</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="F">Fail</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="margin-left: auto;">
+                    <label>Sort By</label>
+                    <select id="sortFilter" onchange="renderTable()">
+                        <option value="total_desc">Total Marks (High to Low)</option>
+                        <option value="total_asc">Total Marks (Low to High)</option>
+                        <option value="name">Name (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card col-12">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Roll No</th><th>Name</th><th>Dept</th>
+                                <th>Math</th><th>Phys</th><th>Chem</th><th>CS</th><th>Eng</th><th>DS</th>
+                                <th>Total</th><th>%</th><th>Grade</th><th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYSIS TAB -->
+        <div id="tab-analysis" class="tab-content">
+            <div class="dashboard-grid">
+                <div class="card col-6">
+                    <div class="card-header"><h3 class="card-title">Subject Average Scores</h3></div>
+                    <div style="height: 300px;"><canvas id="subjectChart"></canvas></div>
+                </div>
+                <div class="card col-6">
+                    <div class="card-header"><h3 class="card-title">Pass/Fail per Subject</h3></div>
+                    <div style="height: 300px;"><canvas id="passfailChart"></canvas></div>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><h3 class="card-title">Department Performance Analysis</h3></div>
+                    <div style="height: 300px;"><canvas id="deptChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIPELINE TAB -->
+        <div id="tab-pipeline" class="tab-content">
+            <div class="card col-12" style="margin-bottom: 2rem;">
+                <div class="card-header"><h3 class="card-title">MapReduce Architecture</h3></div>
+                <div style="background: var(--bg-main); padding: 2rem; border-radius: var(--radius-md); text-align: center;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                        <div style="background: white; border: 1px solid var(--border); padding: 1rem; border-radius: 8px; width: 140px;">
+                            <div style="font-weight: 700; color: var(--primary);">HDFS Input</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">students.csv</div>
+                        </div>
+                        <i data-lucide="arrow-right" color="#cbd5e1"></i>
+                        <div style="background: white; border: 1px solid var(--border); padding: 1rem; border-radius: 8px; width: 140px;">
+                            <div style="font-weight: 700; color: var(--success);">Mapper</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">(key, value)</div>
+                        </div>
+                        <i data-lucide="arrow-right" color="#cbd5e1"></i>
+                        <div style="background: white; border: 1px solid var(--border); padding: 1rem; border-radius: 8px; width: 140px;">
+                            <div style="font-weight: 700; color: var(--accent);">Shuffle</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Sort & Merge</div>
+                        </div>
+                        <i data-lucide="arrow-right" color="#cbd5e1"></i>
+                        <div style="background: white; border: 1px solid var(--border); padding: 1rem; border-radius: 8px; width: 140px;">
+                            <div style="font-weight: 700; color: var(--danger);">Reducer</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Aggregate</div>
+                        </div>
+                        <i data-lucide="arrow-right" color="#cbd5e1"></i>
+                        <div style="background: white; border: 1px solid var(--border); padding: 1rem; border-radius: 8px; width: 140px;">
+                            <div style="font-weight: 700; color: var(--primary);">HDFS Output</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">results.txt</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card col-6">
+                    <div class="card-header"><h3 class="card-title">Hadoop Cluster Daemons</h3></div>
+                    <table>
+                        <tr><td><strong>NameNode</strong></td><td>Metadata storage & namespace management</td></tr>
+                        <tr><td><strong>DataNode</strong></td><td>Block storage & client read/write</td></tr>
+                        <tr><td><strong>ResourceManager</strong></td><td>YARN scheduler for cluster resources</td></tr>
+                        <tr><td><strong>NodeManager</strong></td><td>YARN container manager on each host</td></tr>
+                    </table>
+                </div>
+                <div class="card col-6">
+                    <div class="card-header"><h3 class="card-title">Analysis mapping</h3></div>
+                    <table>
+                        <tr><td><strong>Task</strong></td><td><strong>Key emitted by Mapper</strong></td></tr>
+                        <tr><td>Grades</td><td>Grade (O, A+, etc)</td></tr>
+                        <tr><td>Dept Avg</td><td>Department Name</td></tr>
+                        <tr><td>Histogram</td><td>Score Bucket (e.g. 70-80)</td></tr>
+                        <tr><td>Subject Avg</td><td>Subject ID</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        const SUBJECTS = ['Math','Physics','Chem','CS','English','DS'];
+        let students = [];
+        let chartInstances = {};
+
+        async function checkStatus() {
+            try {
+                const r = await fetch('/api/status');
+                const d = await r.json();
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                const detail = document.getElementById('status-detail');
+                
+                if (d.ready) {
+                    dot.className = 'status-dot active';
+                    text.innerText = 'System Ready';
+                    detail.innerText = 'Analytical results synced with HDFS';
+                    return true;
+                } else {
+                    dot.className = 'status-dot';
+                    text.innerText = 'Processing...';
+                    detail.innerText = `Jobs done: ${d.files_ready.length} / ${d.total_required}`;
+                    return false;
+                }
+            } catch(e) {
+                document.getElementById('status-dot').className = 'status-dot error';
+                document.getElementById('status-text').innerText = 'Connection Error';
+                return false;
+            }
+        }
+
+        async function loadData() {
+            const isReady = await checkStatus();
+            if (!isReady) {
+                setTimeout(loadData, 3000); // Retry if not ready
+                // But still try to fetch what we have
+            }
+
+            try {
+                const endpoints = [
+                    '/api/grades', '/api/subject-averages', '/api/dept-analysis', 
+                    '/api/top-rankers', '/api/pass-fail', '/api/histogram'
+                ];
+                
+                const data = await Promise.all(
+                    endpoints.map(e => fetch(e).then(r => r.ok ? r.json() : {}))
+                );
+
+                try {
+                    const csvResp = await fetch('/api/students');
+                    if(csvResp.ok) {
+                        const csv = await csvResp.text();
+                        const lines = csv.trim().split('\n').slice(1);
+                        students = lines.filter(l=>l.trim()).map(line=>{
+                            const c = line.trim().replace(/\r/,'').split(',');
+                            return { 
+                                roll:c[0], name:c[1], dept:c[2],
+                                subs:[+c[3],+c[4],+c[5],+c[6],+c[7],+c[8]],
+                                total:+c[9], pct:parseFloat(c[10]), grade:c[11], result:c[12] 
+                            };
+                        });
+                    }
+                } catch(e) { console.warn('CSV missing'); }
+
+                renderAll(...data);
+                document.getElementById('loading-overlay').style.display = 'none';
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function renderAll(grades, subjects, depts, rankers, passfail, histogram) {
+            renderStats(passfail);
+            renderGrades(grades);
+            renderRankers(rankers);
+            renderHistogram(histogram);
+            renderTable();
+            renderAnalysis(subjects, depts);
+        }
+
+        function renderStats(pf) {
+            const pass = pf['Pass'] || 0;
+            const fail = pf['Fail'] || 0;
+            const total = pass + fail || students.length || 200;
+            let avg = 0;
+            if(students.length) avg = Math.round(students.reduce((acc,s)=>acc+s.pct,0)/students.length);
+
+            const row = document.getElementById('stats-row');
+            row.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:var(--primary-light); color:var(--primary)"><i data-lucide="users"></i></div>
+                    <div class="stat-info"><h3>Total Cohort</h3><div class="value">${total}</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fef3c7; color:#d97706"><i data-lucide="award"></i></div>
+                    <div class="stat-info"><h3>Class Average</h3><div class="value">${avg}%</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#dcfce7; color:#16a34a"><i data-lucide="check-circle-2"></i></div>
+                    <div class="stat-info"><h3>Pass Rate</h3><div class="value">${Math.round((pass/total)*100 || 0)}%</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fee2e2; color:#dc2626"><i data-lucide="trending-up"></i></div>
+                    <div class="stat-info"><h3>Distinct Grades</h3><div class="value">7</div></div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderGrades(g) {
+            if (chartInstances.grades) chartInstances.grades.destroy();
+            const keys = ['O','A+','A','B+','B','C','F'];
+            const data = keys.map(k => g[k] || 0);
+            chartInstances.grades = new Chart(document.getElementById('gradeChart'), {
+                type: 'bar',
+                data: {
+                    labels: keys,
+                    datasets: [{
+                        label: 'Student Count',
+                        data: data,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderHistogram(h) {
+            if (chartInstances.hist) chartInstances.hist.destroy();
+            const keys = Object.keys(h).sort((a,b) => parseInt(a)-parseInt(b));
+            chartInstances.hist = new Chart(document.getElementById('histChart'), {
+                type: 'line',
+                data: {
+                    labels: keys,
+                    datasets: [{
+                        label: 'Density',
+                        data: keys.map(k => h[k]),
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderRankers(rankers) {
+            const list = Array.isArray(rankers) ? rankers : Object.values(rankers);
+            document.getElementById('rankList').innerHTML = list.slice(0, 5).map((r, i) => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-weight: 700; color: var(--text-muted); width: 20px;">${i+1}</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.875rem;">${r.name}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${r.dept}</div>
+                        </div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary);">${r.pct}%</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTable() {
+            if(!students.length) return;
+            let data = [...students];
+            
+            const df = document.getElementById('deptFilter').value;
+            const gf = document.getElementById('gradeFilter').value;
+            const sf = document.getElementById('sortFilter').value;
+
+            if(df) data = data.filter(s => s.dept === df);
+            if(gf) data = data.filter(s => s.grade === gf);
+            
+            if(sf === 'total_desc') data.sort((a,b) => b.total - a.total);
+            else if(sf === 'total_asc') data.sort((a,b) => a.total - b.total);
+            else data.sort((a,b) => a.name.localeCompare(b.name));
+
+            document.getElementById('studentTable').innerHTML = data.slice(0, 100).map((s,i) => `
+                <tr>
+                    <td>${i+1}</td>
+                    <td><strong>${s.roll}</strong></td>
+                    <td>${s.name}</td>
+                    <td>${s.dept}</td>
+                    ${s.subs.map(m => `<td>${m}</td>`).join('')}
+                    <td><strong>${s.total}</strong></td>
+                    <td>${s.pct}%</td>
+                    <td><span class="badge badge-info">${s.grade}</span></td>
+                    <td><span class="badge ${s.result==='Pass'?'badge-success':'badge-danger'}">${s.result}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAnalysis(subjects, depts) {
+            if (chartInstances.subject) chartInstances.subject.destroy();
+            chartInstances.subject = new Chart(document.getElementById('subjectChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: SUBJECTS,
+                    datasets: [{
+                        data: SUBJECTS.map(s => subjects[s] || 0),
+                        backgroundColor: ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#818cf8', '#a78bfa']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            if (chartInstances.dept) chartInstances.dept.destroy();
+            const dKeys = Object.keys(depts);
+            chartInstances.dept = new Chart(document.getElementById('deptChart'), {
+                type: 'bar',
+                data: {
+                    labels: dKeys,
+                    datasets: [{
+                        label: 'Average %',
+                        data: dKeys.map(k => depts[k].avg),
+                        backgroundColor: '#2563eb',
+                        borderRadius: 8
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            if (chartInstances.pf) chartInstances.pf.destroy();
+            const pData = SUBJECTS.map((_, i) => students.filter(s => s.subs[i] >= 35).length);
+            const fData = SUBJECTS.map((_, i) => students.filter(s => s.subs[i] < 35).length);
+            chartInstances.pf = new Chart(document.getElementById('passfailChart'), {
+                type: 'bar',
+                data: {
+                    labels: SUBJECTS,
+                    datasets: [
+                        { label: 'Pass', data: pData, backgroundColor: '#10b981' },
+                        { label: 'Fail', data: fData, backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            el.classList.add('active');
+            
+            const titles = { overview: 'Performance Overview', students: 'Student Records', analysis: 'Deep Analysis', pipeline: 'Hadoop Pipeline' };
+            document.getElementById('view-title').innerText = titles[tabId];
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

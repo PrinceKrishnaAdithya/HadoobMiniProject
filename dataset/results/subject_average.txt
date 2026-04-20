@@ -1,0 +1,6 @@
+"Physics"	61.73
+"Chemistry"	61.27
+"Math"	61.48
+"English"	60.91
+"CS"	62.17
+"DataStructures"	61.65

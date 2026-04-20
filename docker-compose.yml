@@ -1,0 +1,145 @@
+version: "3.8"
+
+services:
+  namenode:
+    image: apache/hadoop:3
+    hostname: namenode
+    container_name: namenode
+    user: "0"
+    env_file: hadoop.env
+    environment:
+      - ENSURE_NAMENODE_DIR=/tmp/hadoop-root/dfs/name
+      - HADOOP_USER_NAME=hadoop
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    command: >
+      bash -c "
+        mkdir -p /tmp/hadoop-root/dfs/name &&
+        if [ ! -f /tmp/hadoop-root/dfs/name/current/VERSION ]; then
+          echo 'Formatting NameNode...' &&
+          hdfs namenode -format -force -nonInteractive;
+        fi &&
+        hdfs namenode
+      "
+    networks:
+      - hadoop-net
+    volumes:
+      - namenode_data:/tmp/hadoop-root/dfs/name
+    healthcheck:
+      test: ["CMD-SHELL", "hdfs dfsadmin -safemode get || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 40s
+
+  datanode:
+    image: apache/hadoop:3
+    hostname: datanode
+    container_name: datanode
+    user: "0"
+    env_file: hadoop.env
+    ports:
+      - "9864:9864"
+    command: >
+      bash -c "
+        mkdir -p /tmp/hadoop-root/dfs/data &&
+        hdfs datanode
+      "
+    networks:
+      - hadoop-net
+    volumes:
+      - datanode_data:/tmp/hadoop-root/dfs/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+  resourcemanager:
+    image: apache/hadoop:3
+    hostname: resourcemanager
+    container_name: resourcemanager
+    env_file: hadoop.env
+    ports:
+      - "8088:8088"
+    command: ["yarn", "resourcemanager"]
+    networks:
+      - hadoop-net
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+  nodemanager:
+    image: apache/hadoop:3
+    hostname: nodemanager
+    container_name: nodemanager
+    env_file: hadoop.env
+    command: ["yarn", "nodemanager"]
+    networks:
+      - hadoop-net
+    depends_on:
+      - resourcemanager
+
+  historyserver:
+    image: apache/hadoop:3
+    hostname: historyserver
+    container_name: historyserver
+    env_file: hadoop.env
+    ports:
+      - "19888:19888"
+    command: >
+      bash -c "
+        until hdfs dfs -ls / > /dev/null 2>&1; do
+          echo 'Waiting for HDFS...'; sleep 5;
+        done;
+        mapred historyserver
+      "
+    networks:
+      - hadoop-net
+    depends_on:
+      namenode:
+        condition: service_healthy
+      resourcemanager:
+        condition: service_started
+
+  mr-runner:
+    build: ./mr-jobs
+    container_name: mr-runner
+    networks:
+      - hadoop-net
+    volumes:
+      - ./dataset:/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+      resourcemanager:
+        condition: service_started
+
+  flask-api:
+    build: ./flask-api
+    container_name: flask-api
+    ports:
+      - "5000:5000"
+    networks:
+      - hadoop-net
+    volumes:
+      - ./dataset:/data
+    depends_on:
+      - mr-runner
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    networks:
+      - hadoop-net
+    depends_on:
+      - flask-api
+
+networks:
+  hadoop-net:
+    driver: bridge
+
+volumes:
+  namenode_data:
+  datanode_data:

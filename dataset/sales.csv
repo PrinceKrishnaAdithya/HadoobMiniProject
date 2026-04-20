@@ -1,0 +1,6 @@
+order_id,product,category,price,quantity
+1,Laptop,Electronics,50000,1
+2,Phone,Electronics,20000,2
+3,Shoes,Fashion,3000,3
+4,Watch,Fashion,5000,2
+5,Headphones,Electronics,2000,4

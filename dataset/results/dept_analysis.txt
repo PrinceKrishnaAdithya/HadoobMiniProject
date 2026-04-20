@@ -1,0 +1,4 @@
+"CSE"	{"avg": 62.47, "count": 50, "max": 90.33, "min": 34.17}
+"MECH"	{"avg": 62.21, "count": 50, "max": 92.67, "min": 28.33}
+"CIVIL"	{"avg": 62.17, "count": 50, "max": 87.33, "min": 29.33}
+"ECE"	{"avg": 59.29, "count": 50, "max": 90.0, "min": 29.0}
